@@ -1,0 +1,44 @@
+/*
+Napisati program koji ispisuje najveci indeks nekog studenta
+*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+/* ukljucuje se struktura koja omogucava rad sa DB */
+EXEC SQL INCLUDE SQLCA;
+
+/* deklaracija promenljivih koje koristi SQL, host promenljive */
+EXEC SQL BEGIN DECLARE SECTION;
+  int d_maxindeks;
+EXEC SQL END DECLARE SECTION;
+
+int iserr(char err[]) {
+  if (SQLCODE < 0) {
+    printf("SQLCODE %ld - %s \n\n", SQLCODE, err);
+    return 1;
+  }
+  return 0;
+}
+
+/* za poziv fje greske koristimo makro */
+#define CHECKERR(s) if (iserr(s)) exit(1);
+
+int main() {
+  /* povezivanje na bazu */
+  EXEC SQL CONNECT TO sem97st1 USER aleksamarkoni USING teodon300;
+  CHECKERR("connect");
+
+  EXEC SQL select max(indeks) INTO :d_maxindeks from dosije;
+  CHECKERR("select");
+
+  if (!SQLCODE) {
+    printf("Max indeks = %d \n\n", d_maxindeks);
+  }
+
+  EXEC SQL CONNECT RESET;
+  CHECKERR("reset");
+
+  return 0;
+}

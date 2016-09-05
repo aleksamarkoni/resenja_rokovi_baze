@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+EXEC SQL INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+    int d_indeks, d_godslusanja;
+    short polozio, postoji;
+    short d_godina;
+    int d_ugod;
+EXEC SQL END DECLARE SECTION;
+
+void is_error(char err[]) {
+  if (SQLCODE < 0) {
+    printf("SQLCODE %d %s\n\n", SQLCODE, err);
+    EXEC SQL CONNECT RESET;
+    exit(EXIT_FAILURE);
+  }
+}
+
+int main() {
+  printf("Indeks studenta: ");
+  scanf("%d", &d_indeks);
+
+  EXEC SQL CONNECT TO sem97st1 USER aleksamarkoni USING teodon300;
+  is_error("connect");
+
+  EXEC SQL SELECT count(*) INTO:postoji from dosije where indeks=:d_indeks;
+  is_error("Select into");
+
+  if (postoji == 0) {
+    printf("Ne postoji student sa indeksom %d.\n", d_indeks);
+    EXEC SQL CONNECT RESET;
+    is_error("Connect reset");
+    return 0;
+  }
+
+  EXEC SQL SELECT count(*) into:polozio
+  from polagao where indeks=:d_indeks
+  and sifpred in (select sifpred
+                  from plans where nazivpred = 'Analiza 1')
+  and ocena > 5;
+  is_error("Da li je polozio Analizu 1.");
+
+  if (polozio == 0) {
+    printf("Studnet nije polozio Analizu 1\n");
+  } else {
+    printf("Student je polozio Analizu 1\n");
+  }
+
+  /* pronalazimo na kojoj godini se slusa dati predmet u zavisnosti od studentovog profila */
+  EXEC SQL select (p.semslus2 + 1)/ 2 into :d_godslusanja
+  from plans p join dosije d on d.statg = p.statg and d.sifprof = p.sifprof
+    and d.indeks = :d_indeks and nazivpred = 'Analiza 1';
+  is_error("Godina u kojoj se slusa ispit");
+
+  printf("Ispit se slusa u %d godini\n.", d_godslusanja);
+
+  /*pronalazimo kada je student upisao prvu godinu po prvi put */
+  EXEC SQL select u.god into :d_ugod
+  from upisgod u join dosije d
+    on u.indeks = d.indeks and u.god = d.god and u.godstud = :d_godslusanja and put = 1
+    and d.indeks = :d_indeks;
+  is_error("Kada je student upisao godinu u kojoj se slusa ispit");
+
+  printf("Student je odslusao godinu %d godine\n", d_ugod);
+
+  EXEC SQL CONNECT RESET;
+  is_error("Connect reset");
+  return 0;
+}
