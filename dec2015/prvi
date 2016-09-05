@@ -1,0 +1,22 @@
+/* Napisati upit:
+   a) Na jeziku relacionog racuna, koji izracunava spisak naziva predmeta koje do sada nije polozio nijedan kandidat.
+      Uz svaki naziv prikazati i godinu donosenja status koji sadrzi taj ispit.
+   b) na jeziku relacione algebre, kao pod a) */
+
+// resenje pod a)
+range of pl is plans
+range of d is dosije
+range of po is polagao
+pl.nazivpred, pl.statg
+where not exists d (
+  d.statg = pl.statg and d.sifprof = p.sifprof
+  and exists po (
+    po.indeks = d.indeks and po.god = d.god and po.sifpred = pl.sifpred
+    and po.ocena > 5
+  )
+)
+
+//resenje pod b)
+plans[nazivpred, statg]
+minus
+((dosije join (polagao where ocena > 5)) join plans)[nazivpred, statg]
